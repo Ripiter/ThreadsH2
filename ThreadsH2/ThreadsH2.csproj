@@ -44,6 +44,7 @@
   <ItemGroup>
     <Compile Include="Opg1And2.cs" />
     <Compile Include="Opg3.cs" />
+    <Compile Include="Opg4.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
