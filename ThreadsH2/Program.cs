@@ -8,7 +8,7 @@ namespace ThreadsH2
         static readonly object _lock = new object();
 
         static int[] buffer = new int[3];
-        static bool customerTake = false;
+        static int amountAvaible = buffer.Length;
 
         static void Main(string[] args)
         {
@@ -16,9 +16,13 @@ namespace ThreadsH2
                 buffer[i] = 1;
 
             Thread procuder = new Thread(Producer);
-            Thread customer = new Thread(Customer);
             procuder.Start();
-            customer.Start();
+            for (int i = 0; i < 10; i++)
+            {
+
+                Thread customer = new Thread(Customer);
+                customer.Start();
+            }
         }
 
         static void Producer()
@@ -27,9 +31,9 @@ namespace ThreadsH2
             {
                 lock (_lock)
                 {
-                    while (customerTake == false)
+                    while (amountAvaible == buffer.Length)
                     {
-                        Console.WriteLine("Waiting");
+                        Console.WriteLine("Procuder waiting");
                         Monitor.Wait(_lock);
                     }
 
@@ -41,7 +45,9 @@ namespace ThreadsH2
                             Console.WriteLine("Procuder replenished");
                         }
                     }
-                    customerTake = false;
+                    amountAvaible = buffer.Length;
+
+                    Monitor.PulseAll(_lock);
                 }
             }
         }
@@ -53,12 +59,19 @@ namespace ThreadsH2
             {
                 lock (_lock)
                 {
+
+                    while (amountAvaible == 0)
+                    {
+                        Console.WriteLine("Customer wait");
+                        Monitor.Wait(_lock);
+                    }
+
                     buffer[rnd.Next(0, buffer.Length - 1)] = 0;
                     Console.WriteLine("Customer have taken");
-                    customerTake = true;
+                    amountAvaible--;
                     Monitor.PulseAll(_lock);
                 }
-                Thread.Sleep(rnd.Next(1000, 5000));
+                //Thread.Sleep(rnd.Next(1000, 5000));
             }
         }
     }
