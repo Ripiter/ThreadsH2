@@ -16,13 +16,9 @@ namespace ThreadsH2
                 buffer[i] = 1;
 
             Thread procuder = new Thread(Producer);
+            Thread customer = new Thread(Customer);
             procuder.Start();
-            for (int i = 0; i < 10; i++)
-            {
-
-                Thread customer = new Thread(Customer);
-                customer.Start();
-            }
+            customer.Start();
         }
 
         static void Producer()
