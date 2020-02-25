@@ -14,5 +14,10 @@ namespace ThreadsH2.FlaskeAutomat
         {
             return new Drink();
         }
+
+        public Drink ProduceDrink(TypeOfDrink typeOfDrink)
+        {
+            return new Drink(typeOfDrink);
+        }
     }
 }

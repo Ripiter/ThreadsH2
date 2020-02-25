@@ -10,25 +10,25 @@ namespace ThreadsH2
         
         static Boat boat = new Boat(10);
 
-
         static Drink[] colaSplit = new Drink[10];
-        static int colaAvaible = colaSplit.Length;
+        static int colaAvaible = 0;
+
         static Drink[] fantaSplit = new Drink[10];
-        static int fantaAvaible = fantaSplit.Length;
+        static int fantaAvaible = 0;
 
         static Producer producer = new Producer();
-
-
-        static bool shouldSplit = false;
-
+        
         static void Main(string[] args)
         {
             Thread addtoboat = new Thread(AddToBoat);
             Thread split = new Thread(Split);
-            Thread colaconsumer = new Thread(ConsumeCola);
+            Thread colaConsumer = new Thread(ConsumeCola);
+            Thread fantaConsumer = new Thread(ConsumeFanta);
+
             addtoboat.Start();
             split.Start();
-            colaconsumer.Start();
+            colaConsumer.Start();
+            fantaConsumer.Start();
         }
 
         static void AddToBoat()
@@ -38,13 +38,11 @@ namespace ThreadsH2
                 lock (_lock)
                 {
                     while (boat.BoatLoad.Count == boat.MaxSize)
-                        Monitor.Wait(_lock);
-
-                    while (boat.BoatLoad.Count < boat.MaxSize)
+                        Monitor.Wait(_lock);;
+                    
+                    while (boat.BoatLoad.Count != boat.MaxSize)
                         boat.BoatLoad.Enqueue(producer.ProduceDrink());
-
-                    Console.WriteLine("Added");
-
+                    
                     Monitor.PulseAll(_lock);
 
                 }
@@ -58,34 +56,32 @@ namespace ThreadsH2
             {
                 lock (_lock)
                 {
-                    while (shouldSplit == false)
+                    while (colaSplit.Length == colaAvaible && fantaSplit.Length == fantaAvaible)
                         Monitor.Wait(_lock);
 
                     if (boat.BoatLoad.Count != 0)
                     {
-                        Console.WriteLine("Splited");
-                        Drink drink = boat.BoatLoad.Peek();
+                        Drink drink = boat.BoatLoad.Dequeue();
 
                         if (drink.DrinkType == TypeOfDrink.Cola)
                         {
-                            while (colaSplit.Length != colaAvaible)
+                            if (colaSplit.Length != colaAvaible)
                             {
-                                InsertInFreeSpace(colaSplit, boat.BoatLoad.Dequeue());
-                                colaAvaible++;
+                                InsertInFreeSpace(colaSplit, drink);
+                                colaAvaible += 1;
                             }
                         }
                         else if (drink.DrinkType == TypeOfDrink.Fanta)
                         {
-                            while (fantaSplit.Length != fantaAvaible)
+                            if (fantaSplit.Length != fantaAvaible)
                             {
-                                InsertInFreeSpace(fantaSplit, boat.BoatLoad.Dequeue());
-                                fantaAvaible++;
+                                InsertInFreeSpace(fantaSplit, drink);
+                                fantaAvaible += 1;
                             }
                         }
-
+                        
                         if (colaSplit.Length == colaAvaible && fantaSplit.Length == fantaAvaible)
-                            shouldSplit = false;
-
+                            Console.WriteLine("Splited");                     
                     }
                     else
                         Monitor.PulseAll(_lock);
@@ -115,20 +111,21 @@ namespace ThreadsH2
                 {
                     while (colaAvaible == 0)
                     {
-                        Console.WriteLine("Customer wait");
+                        Console.WriteLine("Customer wait for cola");
                         Monitor.Wait(_lock);
                     }
 
                     colaSplit[rnd.Next(0, colaSplit.Length)] = null;
                     Console.WriteLine("Customer have taken cola");
                     colaAvaible--;
-                    shouldSplit = true;
-
+                    
                     Monitor.PulseAll(_lock);
                 }
                 Thread.Sleep(10000);
             }
         }
+
+
         static void ConsumeFanta()
         {
             Random rnd = new Random(Guid.NewGuid().GetHashCode());
@@ -138,25 +135,18 @@ namespace ThreadsH2
                 {
                     while (fantaAvaible == 0)
                     {
-                        Console.WriteLine("Customer wait");
+                        Console.WriteLine("Customer wait for fanta");
                         Monitor.Wait(_lock);
                     }
 
                     fantaSplit[rnd.Next(0, fantaSplit.Length)] = null;
-                    Console.WriteLine("Customer have taken cola");
+                    Console.WriteLine("Customer have taken fanta");
                     fantaAvaible--;
-                    shouldSplit = true;
-
+                    
                     Monitor.PulseAll(_lock);
                 }
                 Thread.Sleep(10000);
             }
-
         }
-
-
-
-
-
     }
 }
