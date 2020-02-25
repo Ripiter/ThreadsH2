@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.Threading;
 
 namespace ThreadsH2
@@ -10,50 +9,61 @@ namespace ThreadsH2
 
         static void Main(string[] args)
         {
-            Stopwatch stopwatch = new Stopwatch();
-            Console.WriteLine("Thread Pool Execution");
-
-            stopwatch.Start();
-            ProcessWithThreadPoolMethod();
-            stopwatch.Stop();
-
-            Console.WriteLine("Time consumed by ProcessWithThreadPoolMethod is : " + stopwatch.ElapsedTicks.ToString());
-
-            stopwatch.Reset();
-            Console.WriteLine("Thread Execution");
-
-            stopwatch.Start();
-            ProcessWithThreadMethod();
-            stopwatch.Stop();
-
-            Console.WriteLine("Time consumed by ProcessWithThreadMethod is : " + stopwatch.ElapsedTicks.ToString());
-
-            Console.Read();
+            Thread t1 = new Thread(PrintHashtag);
+            Thread t2 = new Thread(PrintStar);
+            t1.Start();
+            t2.Start();
         }
+        
+        static int numberToPrint = 60;
+        static int currNumber = 0;
+        static bool printingHashtag = true;
 
-        static void ProcessWithThreadPoolMethod()
+        static void PrintHashtag()
         {
-            ThreadPool.QueueUserWorkItem(Process, "Jorge");
-        }
-
-        static void ProcessWithThreadMethod()
-        {
-            Thread obj = new Thread(Process);
-            obj.Start("Hello world");
-        }
-
-        static void Process(object callback)
-        {
-            string msg = (string)callback;
-            
-            
-            for (int i = 0; i < 10; i++)
-            {
-                for (int j = 0; j < 10; j++)
+            while (true)
+                lock (_lock)
                 {
+                    while (printingHashtag == false)
+                        Monitor.Wait(_lock);
 
+                    while (numberToPrint > currNumber)
+                    {
+                        Console.Write("#");
+                        currNumber++;
+                    }
+
+                    printingHashtag = false;
+
+                    numberToPrint += 60;
+                    Console.Write(currNumber);
+                    Console.WriteLine();
+                    Monitor.PulseAll(_lock);
                 }
-            }
         }
+
+        static void PrintStar()
+        {
+            while (true)
+                lock (_lock)
+                {
+                    while (printingHashtag == true)
+                        Monitor.Wait(_lock);
+
+                    while (numberToPrint > currNumber)
+                    {
+                        Console.Write("*");
+                        currNumber++;
+                    }
+                    printingHashtag = true;
+
+                    numberToPrint += 60;
+                    Console.Write(currNumber);
+                    Console.WriteLine();
+                    Monitor.PulseAll(_lock);
+                }
+        }
+
+
     }
 }
