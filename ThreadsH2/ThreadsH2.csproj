@@ -42,6 +42,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FlaskeAutomat\Boat.cs" />
+    <Compile Include="FlaskeAutomat\Drink.cs" />
+    <Compile Include="FlaskeAutomat\Producer.cs" />
     <Compile Include="Locks\Opg1Threads.cs" />
     <Compile Include="Locks\StarAndHashtag.cs" />
     <Compile Include="Opg1And2.cs" />

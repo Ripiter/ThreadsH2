@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using ThreadsH2.FlaskeAutomat;
 
 namespace ThreadsH2
 {
@@ -7,68 +8,62 @@ namespace ThreadsH2
     {
         static readonly object _lock = new object();
 
-        static int[] buffer = new int[3];
-        static int amountAvaible = buffer.Length;
+        static Boat boat = new Boat(10);
+        static Drink[] colaSplit = new Drink[10];
+        static Drink[] fantaSplit = new Drink[10];
+
+        static Producer producer = new Producer();
+
+
+        static bool shouldSplit = false;
 
         static void Main(string[] args)
         {
-            for (int i = 0; i < buffer.Length; i++)
-                buffer[i] = 1;
-
-            Thread procuder = new Thread(Producer);
-            Thread customer = new Thread(Customer);
-            procuder.Start();
-            customer.Start();
+            Thread boatT = new Thread(AddToBoat);
+            boatT.Start();
         }
 
-        static void Producer()
+        static void AddToBoat()
         {
             while (true)
             {
                 lock (_lock)
                 {
-                    while (amountAvaible == buffer.Length)
-                    {
-                        Console.WriteLine("Procuder waiting");
-                        Monitor.Wait(_lock);
-                    }
-
-                    for (int i = 0; i < buffer.Length; i++)
-                    {
-                        if (buffer[i] == 0)
-                        {
-                            buffer[i] = 1;
-                            Console.WriteLine("Procuder replenished");
-                        }
-                    }
-                    amountAvaible = buffer.Length;
-
-                    Monitor.PulseAll(_lock);
+                    if (boat.BoatLoad.Count < boat.MaxSize)
+                        boat.BoatLoad.Enqueue(producer.ProduceDrink());
                 }
             }
         }
 
-        static void Customer()
+
+        static void Split()
         {
-            Random rnd = new Random();
             while (true)
             {
                 lock (_lock)
                 {
-
-                    while (amountAvaible == 0)
+                    if(shouldSplit == true)
                     {
-                        Console.WriteLine("Customer wait");
-                        Monitor.Wait(_lock);
+                        //Split to arrays
                     }
-
-                    buffer[rnd.Next(0, buffer.Length - 1)] = 0;
-                    Console.WriteLine("Customer have taken");
-                    amountAvaible--;
-                    Monitor.PulseAll(_lock);
                 }
-                //Thread.Sleep(rnd.Next(1000, 5000));
             }
         }
+
+        static void Consume()
+        {
+            while (true)
+            {
+                lock (_lock)
+                {
+                    //Consume here
+                }
+            }
+        }
+
+
+
+
+
     }
 }
