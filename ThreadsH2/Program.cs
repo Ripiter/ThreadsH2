@@ -7,63 +7,59 @@ namespace ThreadsH2
     {
         static readonly object _lock = new object();
 
+        static int[] buffer = new int[3];
+        static bool customerTake = false;
+
         static void Main(string[] args)
         {
-            Thread t1 = new Thread(PrintHashtag);
-            Thread t2 = new Thread(PrintStar);
-            t1.Start();
-            t2.Start();
-        }
-        
-        static int numberToPrint = 60;
-        static int currNumber = 0;
-        static bool printingHashtag = true;
+            for (int i = 0; i < buffer.Length; i++)
+                buffer[i] = 1;
 
-        static void PrintHashtag()
+            Thread procuder = new Thread(Producer);
+            Thread customer = new Thread(Customer);
+            procuder.Start();
+            customer.Start();
+        }
+
+        static void Producer()
         {
             while (true)
+            {
                 lock (_lock)
                 {
-                    while (printingHashtag == false)
-                        Monitor.Wait(_lock);
-
-                    while (numberToPrint > currNumber)
+                    while (customerTake == false)
                     {
-                        Console.Write("#");
-                        currNumber++;
+                        Console.WriteLine("Waiting");
+                        Monitor.Wait(_lock);
                     }
 
-                    printingHashtag = false;
-
-                    numberToPrint += 60;
-                    Console.Write(currNumber);
-                    Console.WriteLine();
-                    Monitor.PulseAll(_lock);
+                    for (int i = 0; i < buffer.Length; i++)
+                    {
+                        if (buffer[i] == 0)
+                        {
+                            buffer[i] = 1;
+                            Console.WriteLine("Procuder replenished");
+                        }
+                    }
+                    customerTake = false;
                 }
+            }
         }
 
-        static void PrintStar()
+        static void Customer()
         {
+            Random rnd = new Random();
             while (true)
+            {
                 lock (_lock)
                 {
-                    while (printingHashtag == true)
-                        Monitor.Wait(_lock);
-
-                    while (numberToPrint > currNumber)
-                    {
-                        Console.Write("*");
-                        currNumber++;
-                    }
-                    printingHashtag = true;
-
-                    numberToPrint += 60;
-                    Console.Write(currNumber);
-                    Console.WriteLine();
+                    buffer[rnd.Next(0, buffer.Length - 1)] = 0;
+                    Console.WriteLine("Customer have taken");
+                    customerTake = true;
                     Monitor.PulseAll(_lock);
                 }
+                Thread.Sleep(rnd.Next(1000, 5000));
+            }
         }
-
-
     }
 }
