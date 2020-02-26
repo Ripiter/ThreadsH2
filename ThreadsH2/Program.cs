@@ -8,12 +8,12 @@ namespace ThreadsH2
     {
         static readonly object _lock = new object();
         
-        static Boat boat = new Boat(10);
+        static Boat boatBuffer = new Boat(10);
 
-        static Drink[] colaSplit = new Drink[10];
+        static Drink[] colaBuffer = new Drink[10];
         static int colaAvaible = 0;
 
-        static Drink[] fantaSplit = new Drink[10];
+        static Drink[] fantaBuffer = new Drink[10];
         static int fantaAvaible = 0;
 
         static Producer producer = new Producer();
@@ -37,11 +37,11 @@ namespace ThreadsH2
             {
                 lock (_lock)
                 {
-                    while (boat.BoatLoad.Count == boat.MaxSize)
+                    while (boatBuffer.BoatLoad.Count == boatBuffer.MaxSize)
                         Monitor.Wait(_lock);;
                     
-                    while (boat.BoatLoad.Count != boat.MaxSize)
-                        boat.BoatLoad.Enqueue(producer.ProduceDrink());
+                    while (boatBuffer.BoatLoad.Count != boatBuffer.MaxSize)
+                        boatBuffer.BoatLoad.Enqueue(producer.ProduceDrink());
                     
                     Monitor.PulseAll(_lock);
 
@@ -56,31 +56,32 @@ namespace ThreadsH2
             {
                 lock (_lock)
                 {
-                    while (colaSplit.Length == colaAvaible && fantaSplit.Length == fantaAvaible)
+                    while (colaBuffer.Length == colaAvaible && fantaBuffer.Length == fantaAvaible)
                         Monitor.Wait(_lock);
 
-                    if (boat.BoatLoad.Count != 0)
+                    if (boatBuffer.BoatLoad.Count != 0)
                     {
-                        Drink drink = boat.BoatLoad.Dequeue();
+                        // Change Q to array
+                        Drink drink = boatBuffer.BoatLoad.Dequeue();
 
                         if (drink.DrinkType == TypeOfDrink.Cola)
                         {
-                            if (colaSplit.Length != colaAvaible)
+                            if (colaBuffer.Length != colaAvaible)
                             {
-                                InsertInFreeSpace(colaSplit, drink);
+                                InsertInFreeSpace(colaBuffer, drink);
                                 colaAvaible += 1;
                             }
                         }
                         else if (drink.DrinkType == TypeOfDrink.Fanta)
                         {
-                            if (fantaSplit.Length != fantaAvaible)
+                            if (fantaBuffer.Length != fantaAvaible)
                             {
-                                InsertInFreeSpace(fantaSplit, drink);
+                                InsertInFreeSpace(fantaBuffer, drink);
                                 fantaAvaible += 1;
                             }
                         }
                         
-                        if (colaSplit.Length == colaAvaible && fantaSplit.Length == fantaAvaible)
+                        if (colaBuffer.Length == colaAvaible && fantaBuffer.Length == fantaAvaible)
                             Console.WriteLine("Splited");                     
                     }
                     else
@@ -115,7 +116,7 @@ namespace ThreadsH2
                         Monitor.Wait(_lock);
                     }
 
-                    colaSplit[rnd.Next(0, colaSplit.Length)] = null;
+                    colaBuffer[rnd.Next(0, colaBuffer.Length)] = null;
                     Console.WriteLine("Customer have taken cola");
                     colaAvaible--;
                     
@@ -139,7 +140,7 @@ namespace ThreadsH2
                         Monitor.Wait(_lock);
                     }
 
-                    fantaSplit[rnd.Next(0, fantaSplit.Length)] = null;
+                    fantaBuffer[rnd.Next(0, fantaBuffer.Length)] = null;
                     Console.WriteLine("Customer have taken fanta");
                     fantaAvaible--;
                     

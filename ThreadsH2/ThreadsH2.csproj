@@ -43,6 +43,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="FlaskeAutomat\Boat.cs" />
+    <Compile Include="FlaskeAutomat\Buffers.cs" />
     <Compile Include="FlaskeAutomat\Drink.cs" />
     <Compile Include="FlaskeAutomat\Producer.cs" />
     <Compile Include="Locks\Opg1Threads.cs" />
