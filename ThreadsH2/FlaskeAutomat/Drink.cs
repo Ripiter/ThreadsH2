@@ -26,7 +26,7 @@ namespace ThreadsH2.FlaskeAutomat
 
         Array values = Enum.GetValues(typeof(TypeOfDrink));
         public Drink()
-        {
+        {   
             this.DrinkType = (TypeOfDrink)values.GetValue(new Random(Guid.NewGuid().GetHashCode()).Next(values.Length));
         }
 

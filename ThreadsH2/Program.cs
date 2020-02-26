@@ -7,17 +7,12 @@ namespace ThreadsH2
     class Program
     {
         static readonly object _lock = new object();
-        
-        static Boat boatBuffer = new Boat(10);
-
-        static Drink[] colaBuffer = new Drink[10];
-        static int colaAvaible = 0;
-
-        static Drink[] fantaBuffer = new Drink[10];
-        static int fantaAvaible = 0;
 
         static Producer producer = new Producer();
-        
+        static Buffers buffer = new Buffers();
+        static Random rnd = new Random(Guid.NewGuid().GetHashCode());
+        static bool refresh = true;
+
         static void Main(string[] args)
         {
             Thread addtoboat = new Thread(AddToBoat);
@@ -37,12 +32,15 @@ namespace ThreadsH2
             {
                 lock (_lock)
                 {
-                    while (boatBuffer.BoatLoad.Count == boatBuffer.MaxSize)
-                        Monitor.Wait(_lock);;
-                    
-                    while (boatBuffer.BoatLoad.Count != boatBuffer.MaxSize)
-                        boatBuffer.BoatLoad.Enqueue(producer.ProduceDrink());
-                    
+                    while (refresh == false)
+                        Monitor.Wait(_lock);
+
+                    while (buffer.BoatBuffer.BoatIsEmpty())
+                        InsertInFreeSpace(buffer.BoatBuffer.BoatLoad, producer.ProduceDrink());
+
+                    refresh = false;
+                    Console.WriteLine("Added");
+
                     Monitor.PulseAll(_lock);
 
                 }
@@ -56,36 +54,53 @@ namespace ThreadsH2
             {
                 lock (_lock)
                 {
-                    while (colaBuffer.Length == colaAvaible && fantaBuffer.Length == fantaAvaible)
+                    while (buffer.ColaBuffer.Length == buffer.ColaAvaible && buffer.FantaBuffer.Length == buffer.FantaAvaible)
                         Monitor.Wait(_lock);
 
-                    if (boatBuffer.BoatLoad.Count != 0)
+                    if (buffer.BoatBuffer.BoatIsEmpty() == false)
                     {
-                        // Change Q to array
-                        Drink drink = boatBuffer.BoatLoad.Dequeue();
+                        if (buffer.ColaBuffer.Length != buffer.ColaAvaible)
+                        {
+                            Drink temp = buffer.BoatBuffer.ReturnDesiredDrink(TypeOfDrink.Cola);
 
-                        if (drink.DrinkType == TypeOfDrink.Cola)
-                        {
-                            if (colaBuffer.Length != colaAvaible)
+                            // if temp is null means that boat buffer doesnt have cola
+                            // pulse should refresh the boat buffer
+                            if (temp == null)
                             {
-                                InsertInFreeSpace(colaBuffer, drink);
-                                colaAvaible += 1;
+                                refresh = true;
+                                Monitor.PulseAll(_lock);
+                            }
+                            else
+                            {
+                                InsertInFreeSpace(buffer.ColaBuffer, temp);
+                                buffer.ColaAvaible += 1;
                             }
                         }
-                        else if (drink.DrinkType == TypeOfDrink.Fanta)
+                        else if (buffer.FantaBuffer.Length != buffer.FantaAvaible)
                         {
-                            if (fantaBuffer.Length != fantaAvaible)
+                            Drink temp = buffer.BoatBuffer.ReturnDesiredDrink(TypeOfDrink.Fanta);
+
+                            if (temp == null)
                             {
-                                InsertInFreeSpace(fantaBuffer, drink);
-                                fantaAvaible += 1;
+                                refresh = true;
+                                Monitor.PulseAll(_lock);
+                            }
+                            else
+                            {
+                                InsertInFreeSpace(buffer.FantaBuffer, temp);
+                                buffer.FantaAvaible += 1;
                             }
                         }
-                        
-                        if (colaBuffer.Length == colaAvaible && fantaBuffer.Length == fantaAvaible)
-                            Console.WriteLine("Splited");                     
+
+
+                        if (buffer.ColaBuffer.Length == buffer.ColaAvaible && buffer.FantaBuffer.Length == buffer.FantaAvaible)
+                            Console.WriteLine("Splited");
                     }
                     else
+                    {
+                        refresh = true;
                         Monitor.PulseAll(_lock);
+                    }
                 }
             }
         }
@@ -105,48 +120,46 @@ namespace ThreadsH2
 
         static void ConsumeCola()
         {
-            Random rnd = new Random(Guid.NewGuid().GetHashCode());
             while (true)
             {
+                Thread.Sleep(rnd.Next(10000, 15000));
                 lock (_lock)
                 {
-                    while (colaAvaible == 0)
+                    while (buffer.ColaAvaible == 0)
                     {
                         Console.WriteLine("Customer wait for cola");
                         Monitor.Wait(_lock);
                     }
 
-                    colaBuffer[rnd.Next(0, colaBuffer.Length)] = null;
+                    buffer.ColaBuffer[rnd.Next(0, buffer.ColaBuffer.Length)] = null;
                     Console.WriteLine("Customer have taken cola");
-                    colaAvaible--;
-                    
+                    buffer.ColaAvaible--;
+
                     Monitor.PulseAll(_lock);
                 }
-                Thread.Sleep(10000);
             }
         }
 
 
         static void ConsumeFanta()
         {
-            Random rnd = new Random(Guid.NewGuid().GetHashCode());
             while (true)
             {
+                Thread.Sleep(rnd.Next(10000, 15000));
                 lock (_lock)
                 {
-                    while (fantaAvaible == 0)
+                    while (buffer.FantaAvaible == 0)
                     {
                         Console.WriteLine("Customer wait for fanta");
                         Monitor.Wait(_lock);
                     }
 
-                    fantaBuffer[rnd.Next(0, fantaBuffer.Length)] = null;
+                    buffer.FantaBuffer[rnd.Next(0, buffer.FantaBuffer.Length)] = null;
                     Console.WriteLine("Customer have taken fanta");
-                    fantaAvaible--;
-                    
+                    buffer.FantaAvaible--;
+
                     Monitor.PulseAll(_lock);
                 }
-                Thread.Sleep(10000);
             }
         }
     }
